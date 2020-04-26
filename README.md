@@ -15,6 +15,7 @@ Refer to [this](https://en.wikipedia.org/wiki/Hangman_(game)) Wikipedia article 
 
 The model is trained using Binary Cross Entropy Loss since it is a multi-label classification problem.
 A pretrained model can be found [here](https://drive.google.com/open?id=1hVBlS3zxTqcVktVZEHTv2ivg-oKpr-KQ).
+It is a 2-layer, 512 hidden unit GRU with dropout and trained using Adam.
 
 # Dataset
 
