@@ -14,10 +14,19 @@ Refer to [this](https://en.wikipedia.org/wiki/Hangman_(game)) Wikipedia article 
 3. The outputs from 1 and 2 are concatenated and we pass this concatenated vector through a hidden layer and map it to a final layer with number of neurons = size of vocabulary (26 in our case for the English alphabet).
 
 The model is trained using Binary Cross Entropy Loss since it is a multi-label classification problem.
+A pretrained model can be found [here](https://drive.google.com/open?id=1hVBlS3zxTqcVktVZEHTv2ivg-oKpr-KQ).
 
 # Dataset
 
 The model is trained on a corpus of around 227k English words which can be found in the datasets folder. Testing is done on a corpus of 20k words. There is a 50% overlap between the training dataset and the testing dataset.
 
 
+# Performance
 
+After preliminary testing, here is a plot of the average number of misses vs length of the word:
+![Performance](https://github.com/methi1999/hangman/imgs/performance.png)
+As you can observe, the average misses decreases as length of the word decreases. This makes sense intuitively since longer the word -> chances of higher number of unique characters increases -> chances of a predicted chaarcter not being present decreases.
+
+# Further Work
+
+Improve performance for shorter words by training the model using weights

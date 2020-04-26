@@ -1,7 +1,7 @@
 import numpy as np
 import json
 from train_test import dl_model
-
+import matplotlib.pyplot as plt
 
 #class responsible for actual gameplay
 class Game:
@@ -75,7 +75,76 @@ class Game:
                     print("Total misses: ", len(misses))
                     return misses
 
+    def test_performance(self, dataset_pth='dataset/20k.txt', num_trials=100, min_word_len=3, plot=True):
+
+        with open(dataset_pth, 'r') as f:
+            words = f.readlines()
+
+        words = [x.strip() for x in words if len(x) >= min_word_len + 1] #+1 since /n is yet to be stripped
+        #randomly choose words from corpus
+        to_test = np.random.choice(words, num_trials)
+        print("Testing performance on the following words:", to_test)
+
+        #stores information about average misses for various lengths of target words
+        len_misses_dict = {}
+        
+        for word in to_test:
+            #intialise dict
+            if len(word) not in len_misses_dict:
+                len_misses_dict[len(word)] = {'misses': 0, 'num': 0}
+
+            hits, misses = [], []
+            predicted_string = ['*']*len(word)
+
+            #keep predicting
+            while 1:
+                #get sorted predictions according to probability
+                best_chars = self.dl_model.predict(predicted_string, misses, self.char_to_id)
+                #best char is the one with highest probability AND which does not belong to list of incorrectly predicted chars
+                #AND not already present in the target string
+                for pred in best_chars:
+                    if pred not in misses and pred not in predicted_string:
+                        best_char = pred
+                        break
+
+                found_char = False
+                if best_char in word: #denotes character not present
+                    #if it is present, user returns a list of indices at which character is present (note that indexing begins from 1 for user feedback)
+                    indices = []
+                    for i, c in enumerate(word):
+                        if c == best_char:
+                            indices.append(i)
+                    #update target string
+                    for pred in indices:
+                        predicted_string[pred] = best_char
+                    found_char = True
+
+                if found_char is False: #indicates miss
+                    #append to missed characters list
+                    misses.append(best_char)
+                else:
+                    #correctly predicted
+                    if '*' in predicted_string: #indicates game is not yet over since we still have unknown characters in target string
+                        hits.append(best_char)
+                    else: #indicates game is over. Report number of misses and return
+                        len_misses_dict[len(word)]['misses'] += len(misses)
+                        len_misses_dict[len(word)]['num'] += 1
+                        break
+
+        len_misses_list = [(l, x['misses']/x['num']) for l, x in len_misses_dict.items()]
+        len_misses_list = sorted(len_misses_list, key = lambda x: x[0])
+        print("Average number of misses:", len_misses_list)
+
+        #plot performance
+        if plot:
+            plt.bar([x[0] for x in len_misses_list], [x[1] for x in len_misses_list])
+            plt.xlabel('Length of word')
+            plt.ylabel('Average misses (lesser the better)')
+            plt.title("Comparing performance as a function of word length")
+            plt.xticks(list(range(min_word_len, len_misses_list[-1][0])))
+            plt.show()
 
 
 a = Game('pickle/char_to_id.json')
-a.play()
+# a.play()
+a.test_performance()
