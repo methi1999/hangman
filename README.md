@@ -30,4 +30,4 @@ As you can observe, the average misses decreases as length of the word decreases
 
 # Further Work
 
-Improve performance for shorter words by training the model using weights
+~~1. Weight examples during training with weights inversely proportional to length.~~

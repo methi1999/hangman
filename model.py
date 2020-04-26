@@ -49,9 +49,6 @@ class RNN(generic_model):
 
         #optimizer
         self.optimizer = optim.Adam(self.parameters(), lr=config['lr'])
-        #use BCEWithLogitsLoss since it is a multi-label classification problem
-        #e.g. if the word is hello and h, e have been already predicted, the model output probability for both l and o should be high
-        self.loss_func = nn.BCEWithLogitsLoss()
 
     def forward(self, x, x_lens, miss_chars):
         """
@@ -80,7 +77,7 @@ class RNN(generic_model):
         #predict
         return self.linear2_out(self.relu(self.linear1_out(concatenated)))
 
-    def calculate_loss(self, model_out, labels, miss_chars):
+    def calculate_loss(self, model_out, labels, input_lens, miss_chars, use_cuda):
         """
         :param model_out: tensor of shape (batch size, max sequence length, output dim) from forward pass
         :param labels: tensor of shape (batch size, vocab_size). 1 at index i indicates that ith character should be predicted
@@ -90,7 +87,20 @@ class RNN(generic_model):
         outputs = nn.functional.log_softmax(model_out, dim=1)
         #calculate model output loss for miss characters
         miss_penalty = torch.sum(outputs*miss_chars, dim=(0,1))/outputs.shape[0]
+        
+        input_lens = input_lens.float()
+        #weights per example is inversely proportional to length of word
+        #this is because shorter words are harder to predict due to higher chances of missing a character
+        weights_orig = (1/input_lens)/torch.sum(1/input_lens).unsqueeze(-1)
+        weights = torch.zeros((weights_orig.shape[0], 1))    
+        #resize so that torch can process it correctly
+        weights[:, 0] = weights_orig
+
+        if use_cuda:
+        	weights = weights.cuda()
+        
         #actual loss
-        actual_penalty = self.loss_func(model_out, labels)
+        loss_func = nn.BCEWithLogitsLoss(weight=weights, reduction='sum')
+        actual_penalty = loss_func(model_out, labels)
         return actual_penalty, miss_penalty
         

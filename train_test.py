@@ -131,7 +131,7 @@ class dl_model():
 					#convert to torch tensors
 					labels = torch.from_numpy(labels).float()
 					miss_chars = torch.from_numpy(miss_chars).float()
-					input_lens= torch.from_numpy(input_lens).long()
+					input_lens = torch.from_numpy(input_lens).long()
 
 					if self.cuda:
 						inputs = inputs.cuda()
@@ -143,7 +143,7 @@ class dl_model():
 					self.model.optimizer.zero_grad()
 					# forward + backward + optimize
 					outputs = self.model(inputs, input_lens, miss_chars)
-					loss, miss_penalty = self.model.calculate_loss(outputs, labels, miss_chars)
+					loss, miss_penalty = self.model.calculate_loss(outputs, labels, input_lens, miss_chars, self.cuda)
 					loss.backward()
 
 					# clip gradient
@@ -244,7 +244,7 @@ class dl_model():
 				self.model.optimizer.zero_grad()
 				# forward + backward + optimize
 				outputs = self.model(inputs, input_lens, miss_chars)
-				loss, miss_penalty = self.model.calculate_loss(outputs, labels, miss_chars)
+				loss, miss_penalty = self.model.calculate_loss(outputs, labels, input_lens, miss_chars, self.cuda)
 				test_loss += loss.item()
 
 				# Reached end of dataset
