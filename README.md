@@ -24,7 +24,7 @@ The model is trained on a corpus of around 227k English words which can be found
 # Performance
 
 After preliminary testing, here is a plot of the average number of misses vs length of the word:
-![Performance](https://github.com/methi1999/hangman/imgs/performance.png)
+![Performance](https://github.com/methi1999/hangman/blob/master/imgs/performance.png)
 As you can observe, the average misses decreases as length of the word decreases. This makes sense intuitively since longer the word -> chances of higher number of unique characters increases -> chances of a predicted chaarcter not being present decreases.
 
 # Further Work
