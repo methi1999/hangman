@@ -9,12 +9,12 @@ import numpy as np
 import os
 import datetime
 import pickle
-from model import RNN
+from model import Transformer
 from dataloader import dataloader
 from dataloader import encoded_to_string
 
 #load config file
-with open("config.yaml", 'r') as stream:
+with open("config-tran.yaml", 'r') as stream:
 	try:
 		config = yaml.safe_load(stream)
 	except yaml.YAMLError as exc:
@@ -28,11 +28,11 @@ class dl_model():
 		# Read config fielewhich contains parameters
 		self.config = config
 		self.mode = mode
-		self.epoch = 45
+		self.epoch = 203
 		# Architecture name decides prefix for storing models and plots
 		feature_dim = self.config['vocab_size']
 		self.arch_name = '_'.join(
-			[self.config['rnn'], str(self.config['num_layers']), str(self.config['hidden_dim']), str(feature_dim)])
+			[str(self.config['model_name']), str(self.config['num_layers']), str(self.config['hidden_dim']), str(feature_dim)])
 
 		print("Architecture:", self.arch_name)
 		# Change paths for storing models
@@ -64,8 +64,8 @@ class dl_model():
 			# dataloader which returns batches of data
 			self.train_loader = dataloader('train', self.config)
 			self.test_loader = dataloader('test', self.config)
-			#declare model
-			self.model = RNN(self.config)
+			# declare model
+			self.model = Transformer(self.config)
 
 			self.start_epoch = 1
 			self.edit_dist = []
@@ -73,19 +73,19 @@ class dl_model():
 
 		else:
 
-			self.model = RNN(self.config)
+			self.model = Transformer(self.config)
 
 		if self.cuda:
 			self.model.cuda()
 
 		# resume training from some stored model
 		if self.mode == 'train' and self.config['resume']:
-			self.start_epoch, self.train_losses, self.test_losses = self.model.load_model(mode, self.model.rnn_name, self.model.num_layers, self.model.hidden_dim)
+			self.start_epoch, self.train_losses, self.test_losses = self.model.load_model(mode, self.model.model_name, self.model.num_layers, self.model.hidden_dim)
 			self.start_epoch += 1
 
 		# load best model for testing/inference
 		elif self.mode == 'test' or mode == 'test_one':
-			self.model.load_model(mode, self.config['rnn'], self.model.num_layers, self.model.hidden_dim, self.epoch)
+			self.model.load_model(mode, self.config['model_name'], self.model.num_layers, self.model.hidden_dim, self.epoch)
 
 		#whether using embeddings
 		if self.config['use_embedding']:
@@ -131,13 +131,13 @@ class dl_model():
 					#convert to torch tensors
 					labels = torch.from_numpy(labels).float()
 					miss_chars = torch.from_numpy(miss_chars).float()
-					input_lens = torch.from_numpy(input_lens)
+					input_lens = torch.from_numpy(input_lens).long()
 
 					if self.cuda:
 						inputs = inputs.cuda()
 						labels = labels.cuda()
 						miss_chars = miss_chars.cuda()
-						input_lens = input_lens
+						input_lens = input_lens.cuda()
 
 					# zero the parameter gradients
 					self.model.optimizer.zero_grad()
@@ -184,7 +184,7 @@ class dl_model():
 				# save model
 				if epoch % self.save_every == 0:
 					self.model.save_model(False, epoch, self.train_losses, self.test_losses,
-										  self.model.rnn_name, self.model.num_layers, self.model.hidden_dim)
+										  self.model.model_name, self.model.num_layers, self.model.hidden_dim)
 
 				# test every 5 epochs in the beginning and then every fixed no of epochs specified in config file
 				# useful to see how loss stabilises in the beginning
@@ -202,7 +202,7 @@ class dl_model():
 				#save model before exiting
 				print("Saving model before quitting")
 				self.model.save_model(False, epoch-1, self.train_losses, self.test_losses,
-									  self.model.rnn_name, self.model.num_layers, self.model.hidden_dim)
+									  self.model.model_name, self.model.num_layers, self.model.hidden_dim)
 				exit(0)
 
 
@@ -232,13 +232,13 @@ class dl_model():
 
 				labels = torch.from_numpy(labels).float()
 				miss_chars = torch.from_numpy(miss_chars).float()
-				input_lens= torch.from_numpy(input_lens)
+				input_lens= torch.from_numpy(input_lens).long()
 
 				if self.cuda:
 					inputs = inputs.cuda()
 					labels = labels.cuda()
 					miss_chars = miss_chars.cuda()
-					input_lens = input_lens
+					input_lens = input_lens.cuda()
 
 				# zero the parameter gradients
 				self.model.optimizer.zero_grad()
@@ -270,7 +270,7 @@ class dl_model():
 		if test_loss == min([x[0] for x in self.test_losses]) and self.mode == 'train':
 			print("Best new model found!")
 			self.model.save_model(True, epoch, self.train_losses, self.test_losses,
-								  self.model.rnn_name, self.model.num_layers, self.model.hidden_dim)
+								  self.model.model_name, self.model.num_layers, self.model.hidden_dim)
 
 		return test_loss
 
@@ -316,20 +316,21 @@ class dl_model():
 		miss_encoded = torch.from_numpy(miss_encoded).float()
 
 		input_lens = np.array([len(string)])
-		input_lens= torch.from_numpy(input_lens).int()
+		input_lens= torch.from_numpy(input_lens).long()
 
 		if self.cuda:
 			inputs = inputs.cuda()
 			miss_encoded = miss_encoded.cuda()
-			input_lens = input_lens
+			input_lens = input_lens.cuda()
+
 		#pass through model
 		output = self.model(inputs, input_lens, miss_encoded).detach().cpu().numpy()[0]
 
 		#sort predictions
 		sorted_predictions = np.argsort(output)[::-1]
-		
 		#we cannnot consider only the argmax since a missed character may also get assigned a high probability
 		#in case of a well-trained model, we shouldn't observe this
+
 		best_chars = [id_to_char[x] for x in sorted_predictions]
 
 		for pred in best_chars:
@@ -363,7 +364,6 @@ class dl_model():
 		plt.savefig(filename)
 
 		print("Saved plots")
-
 
 if __name__ == '__main__':
 	a = dl_model('train')

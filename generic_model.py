@@ -47,12 +47,11 @@ class generic_model(nn.Module):
             try:
                 if epoch is None:
                     filename = self.config_file['models'] + 'best_' + '_'.join(
-                        [rnn_name, str(layers), str(hidden_dim)]) + '.pth'
+                        [rnn_name, str(layers), str(hidden_dim)]) + '.pth'                        
                 else:
-                    filename = self.config_file['models'] + str(epoch) + '_'.join(
+                    filename = self.config_file['models'] + str(epoch) + '_' + '_'.join(
                         [rnn_name, str(layers), str(hidden_dim)]) + '.pth'
-
-                checkpoint = torch.load(filename, map_location=lambda storage, loc: storage)
+                checkpoint = torch.load(filename)
                 # load model parameters
                 print("Loading:", filename)
                 self.load_state_dict(checkpoint['model_state_dict'])

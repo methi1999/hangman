@@ -4,7 +4,7 @@ import os
 import pickle
 import json
 
-np.random.seed(7)
+np.random.seed(35)
 
 #number of dimensions in input tensor over the vocab size
 #1 in this case which represents the blank character
@@ -90,9 +90,9 @@ def encoded_to_string(encoded, target, missed, encoded_len, char_to_id, use_embe
 	id_to_char = {v:k for k, v in char_to_id.items()}
 
 	if use_embedding:
-		word = [id_to_char[x] if x < len(char_to_id) - 1 else '*' for x in list(encoded[:encoded_len])]
+		word = [id_to_char[x] if x < len(char_to_id) - 1 else '_' for x in list(encoded[:encoded_len])]
 	else:
-		word = [id_to_char[x] if x < len(char_to_id) - 1 else '*' for x in list(np.argmax(encoded[:encoded_len, :], axis=1))]
+		word = [id_to_char[x] if x < len(char_to_id) - 1 else '_' for x in list(np.argmax(encoded[:encoded_len, :], axis=1))]
 
 	word = ''.join(word)
 	target = [id_to_char[x] for x in list(np.where(target != 0)[0])]
@@ -129,7 +129,7 @@ class dataloader:
 
 		#dataset for training and testing
 		if mode == 'train':
-			filename = config['dataset'] + "250k.txt"
+			filename = config['dataset'] + "words_250000_train.txt"
 		else:
 			filename = config['dataset'] + "20k.txt"
 
@@ -250,7 +250,7 @@ class dataloader:
 		"""
 
 		cur_batch = self.cur_epoch_data[self.idx: self.idx+self.batch_size]
-		#convert to numoy arrays
+		#convert to numpy arrays
 		lens = np.array([len(x[0]) for x in cur_batch])
 		inputs = batchify_words([x[0] for x in cur_batch], self.vocab_size, self.use_embedding)
 		labels = np.array([x[1] for x in cur_batch])

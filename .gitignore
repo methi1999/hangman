@@ -1,0 +1,9 @@
+# dataset
+*.txt
+*.ipynb
+# dir
+__pycache__/
+models*/
+pickle/
+plots*/
+dataset/
